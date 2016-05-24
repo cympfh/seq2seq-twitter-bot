@@ -6,16 +6,16 @@
 
 # files
 
-- `/eliza`: model and networks using chainer
-- `/script`: script to acquire scripts from Twitter
+- `/eliza`: a network and a language model
+- `/script`: scripts to acquire corpus from Twitter
 
 # model
 
-- `x -> LSTM -> Linear -> x'`
+- model = `x -> LSTM -> Linear -> x'` where `x` and `x'` are chars
 - let input = `w1 w2 .. wn`
-- model reads `<a>, wn, .. w2, w1, <b> w1, w2, .. wn <c>`
-- after read `<c>`, she outputs
+- she reads `<a> wn .. w2 w1 <b> w1 w2 .. wn <c>` in order
+- after read `<c>`, she outputs chars
     - `v1 v2 .. vm <d>`
-    - let output = `v1 v2 .. vm`
+    - her reply is `v1 v2 .. vm`
 
 
