@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import random
 import chainer
@@ -8,14 +9,16 @@ import chainer.links as L
 
 import network
 
+special_chars = ["<a>", "<b>", "<c>", "<d>", "<♡>"]
+
 class Lang(Chain):
 
-    def __init__(self):
+    def __init__(self, trainfile):
         self.alphabet = {} # char => id
         self.rev_alphabet = {} # id => char
         self.train_data = []
 
-        self.read_traindata()
+        self.load(trainfile)
         self.model = L.Classifier(network.LMNet(len(self.alphabet)))
 
         self.opt = optimizers.SGD()
@@ -28,22 +31,25 @@ class Lang(Chain):
             self.rev_alphabet[m] = a
         return self.alphabet[a]
 
-    def sentence_to_vector(self, s):
-        return [ self.add_alphabet(a) for a in list(s) ]
+    def sentence_to_vector(self, s, addition=False):
+        if addition:
+            return [ self.add_alphabet(a) for a in list(s) ]
+        else:
+            unk = self.alphabet["<♡>"]
+            return [ self.alphabet[a] if a in self.alphabet else unk for a in list(s) ]
 
-    def read_traindata(self):
-        self.add_alphabet("<a>")
-        self.add_alphabet("<b>")
-        self.add_alphabet("<c>")
-        self.add_alphabet("<d>")
+    def load(self, trainfile):
+        for a in special_chars:
+            self.add_alphabet(a)
 
-        while True:
-            try:
-                a = self.sentence_to_vector( input() )
-                b = self.sentence_to_vector( input() ) # reply to `a`
-                self.train_data.append({ "input": a, "output": b })
-            except EOFError:
-                break
+        lines = []
+        with open(trainfile, mode='r') as f:
+            for line in f:
+                lines.append(line.strip())
+        for i in range(len(lines)//2):
+            a = self.sentence_to_vector(lines[i * 2], addition=True)
+            b = self.sentence_to_vector(lines[i * 2 + 1], addition=True)
+            self.train_data.append({ "input": a, "output": b })
 
     def read(self, id, id2=None):
         x = Variable(np.array([ id ], dtype=np.int32).reshape((1,1)))
@@ -85,7 +91,8 @@ class Lang(Chain):
         c = self.alphabet["<c>"]
         d = self.alphabet["<d>"]
 
-        for _ in range(iterator):
+        for cx in range(iterator):
+            sys.stderr.write("\r{}/{}".format(cx + 1, iterator))
             idx = random.randint(0, len(self.train_data) - 1)
             u = self.train_data[idx]["input"]
             v = self.train_data[idx]["output"]
@@ -109,3 +116,5 @@ class Lang(Chain):
             loss.backward()
             loss.unchain_backward()
             self.opt.update()
+
+        sys.stderr.write("\n")
