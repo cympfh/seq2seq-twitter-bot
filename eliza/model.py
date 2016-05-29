@@ -91,6 +91,8 @@ class Lang(Chain):
         c = self.alphabet["<c>"]
         d = self.alphabet["<d>"]
 
+        acc_loss = 0.0
+        k = 100
         for cx in range(iterator):
             idx = random.randint(0, len(self.train_data) - 1)
             u = self.train_data[idx]["input"]
@@ -116,5 +118,8 @@ class Lang(Chain):
             loss.unchain_backward()
             self.opt.update()
 
-            sys.stderr.write("\r{}/{} ({})".format(cx + 1, iterator, loss.data))
+            acc_loss += loss.data
+            if cx % k == k - 1:
+                sys.stderr.write("\r{}/{} ({:.2f})  ".format(cx + 1, iterator, acc_loss / k))
+                acc_loss = 0.0
         sys.stderr.write("\n")
