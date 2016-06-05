@@ -1,4 +1,22 @@
-今の `out` は 2Dcat です
-/1.1/statuses/user_timeline.json?screen_name=2Dcat&count=2&max_id=497326838914371583
-で失敗 (API制限?) して終わってます.
-続きをやるときはこれから再開したい.
+Twitterのスクリーンネーム (ex. cympfh) のツイート取得には
+
+./hometime.sh cympfh
+
+とすると、テキストファイル `cympfh` ができる.
+APIの性質上、最近のものから200件ずつ、取得する.
+あるときに停めても、`cympfh` があれば、その続きから再開する.
+
+---
+
+含まれてるリプライ先の取得には
+
+./get_replies.sh cympfh
+
+とする. これは先程の `cympfh` ファイルを読む.
+`inreplyto/` フォルダ以下に、保存する.
+
+---
+
+combine.rb cympfh
+
+ツイートと、リプライ先とを組合せて、eliza にそのまま食わせられる形式の会話事例集を作る.
