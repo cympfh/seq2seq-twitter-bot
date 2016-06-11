@@ -4,6 +4,11 @@ import readrc
 import tweepy
 import normalizer as N
 import random
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', type=str, default='eliza.model')
+args = parser.parse_args()
 
 
 class Eliza():
@@ -37,7 +42,7 @@ class Eliza():
         self.api.update_status(text)
 
 
-eliza = Eliza('./2Dcat.model')
+eliza = Eliza(args.model)
 
 
 class StreamListener(tweepy.StreamListener):

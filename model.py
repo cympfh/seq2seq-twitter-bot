@@ -2,7 +2,7 @@ import numpy as np
 import random
 from chainer import Variable, optimizers
 from chainer import Chain
-import chainer.links as L
+import chainer.functions as F
 import network
 
 special_chars = ["<eos>", "<unk>"]
@@ -18,6 +18,27 @@ def choose(ls):
     return a[i]
 
 
+def align(us, vs):
+    """
+    us = [[1,2,2,0], [1,2,0]]
+    vs = [[3,3,3,3,0], [2,0]]
+    xs = [[1,2,2,0,3,3,3,3], [1,2,0,2,0,0,0,0]]
+    ys = [[-,-,-,3,3,3,3,0], [-,-,2,0,-,-,-,-]]
+    """
+    n = len(us)
+    m = max(len(u) + len(v) - 1 for u, v in zip(us, vs))
+    xs = np.zeros((n, m), dtype=np.int32)
+    ys = np.zeros((n, m), dtype=np.int32)
+    for x, y, u, v in zip(xs, ys, us, vs):
+        k = len(u)
+        t = len(v)
+        x[0:k] = u
+        x[k:k+t-1] = v[:-1]
+        y[:] = -1
+        y[k-1:k+t-1] = v
+    return xs, ys
+
+
 class Lang(Chain):
 
     def __init__(self, trainfile):
@@ -26,7 +47,7 @@ class Lang(Chain):
         self.train_data = []
 
         self.load(trainfile)
-        self.model = L.Classifier(network.LMNet(len(self.alphabet)))
+        self.model = network.LMNet(len(self.alphabet))
 
         self.opt = optimizers.AdaGrad(lr=0.004)
         self.opt.setup(self.model)
@@ -49,6 +70,7 @@ class Lang(Chain):
     def load(self, trainfile):
         for a in special_chars:
             self.add_alphabet(a)
+        eos = self.alphabet["<eos>"]
 
         lines = []
         with open(trainfile, mode='r') as f:
@@ -58,29 +80,21 @@ class Lang(Chain):
         for i in range(len(lines)//2):
             a = self.sentence_to_vector(lines[i * 2], addition=True)
             b = self.sentence_to_vector(lines[i * 2 + 1], addition=True)
+            a = a + [eos]
+            b = b + [eos]
             self.train_data.append({"input": a, "output": b})
 
-    def read(self, id, id2=None):
+    def read(self, id):
         x = Variable(np.array([id], dtype=np.int32).reshape((1, 1)))
-        if id2 is None:
-            return choose(list(self.model.predictor(x).data[0]))
-        else:
-            t = Variable(np.array([id2], dtype=np.int32).reshape((1,)))
-            return self.model(x, t)
+        return choose(list(self.model(x).data[0]))
 
-    def gen(self, in_str):
-        ret = []
+    def gen(self, sentence):
         eos = self.alphabet["<eos>"]
-
-        u = self.sentence_to_vector(in_str)
-        n = len(u)
-
-        self.model.predictor.reset_state()
-        for i in range(n):
-            self.read(u[n-i-1])
-        # for i in range(n):
-        #     self.read(u[i])
-        ret.append(self.read(eos))
+        u = self.sentence_to_vector(sentence) + [eos]
+        self.model.reset_state()
+        for a in u:
+            y = self.read(a)
+        ret = [y]
         while ret[-1] != eos:
             ret.append(self.read(ret[-1]))
             if len(ret) > 130:
@@ -90,34 +104,30 @@ class Lang(Chain):
         ret = ''.join(ret)
         return ret
 
-    def train(self, iterator=1000):
-        eos = self.alphabet["<eos>"]
-        sum_loss = 0.0
+    def error(self, us, vs):
+        xs, ys = align(us, vs)
+        xs = np.transpose(xs)
+        ys = np.transpose(ys)
+        loss = 0.0
+        self.model.reset_state()
+        for x, y in zip(xs, ys):
+            x = Variable(x)
+            y = Variable(y)
+            loss += F.softmax_cross_entropy(self.model(x, train=True), y)
+        return loss
 
-        for cx in range(iterator):
-            idx = random.randint(0, len(self.train_data) - 1)
-            u = self.train_data[idx]["input"]
-            v = self.train_data[idx]["output"]
-            n = len(u)
-            m = len(v)
+    def train(self, batch=100, cx=0):
+        n = len(self.train_data)
+        order = np.random.permutation(n)
 
-            self.model.predictor.reset_state()
-            for i in range(n):
-                self.read(u[n-i-1])
-            # for i in range(n):
-            #     self.read(u[i])
+        indicies = [order[i % n] for i in range(cx * batch, (cx + 1) * batch)]
+        us = [self.train_data[i]["input"] for i in indicies]
+        vs = [self.train_data[i]["output"] for i in indicies]
+        loss = self.error(us, vs)
 
-            loss = 0
-            last = eos
-            for i in range(m):
-                loss += self.read(last, v[i])
-                last = v[i]
-            loss += self.read(last, eos)
+        self.model.zerograds()
+        loss.backward()
+        loss.unchain_backward()
+        self.opt.update()
 
-            self.model.zerograds()
-            loss.backward()
-            loss.unchain_backward()
-            self.opt.update()
-
-            sum_loss += loss.data
-        return sum_loss
+        return loss.data / batch

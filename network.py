@@ -8,18 +8,16 @@ class LMNet(Chain):
     def __init__(self, alphabetsize):
         super(LMNet, self).__init__(
             embed=L.EmbedID(alphabetsize, 1000),
-            lstm=L.LSTM(1000, 100),
-            lin1=L.Linear(100, 50),
-            lin2=L.Linear(50, 100),
-            lin3=L.Linear(100, alphabetsize),
+            lstm=L.LSTM(1000, 200),
+            lin1=L.Linear(200, 100),
+            lin2=L.Linear(100, alphabetsize),
         )
 
-    def __call__(self, x):
+    def __call__(self, x, train=False):
         x = self.embed(x)
-        h1 = self.lstm(x)
-        h2 = F.tanh(self.lin1(h1))
-        h3 = F.sigmoid(self.lin2(h2))
-        y = self.lin3(h3)
+        h = F.dropout(self.lstm(x), train=train, ratio=0.1)
+        h = F.tanh(self.lin1(h))
+        y = self.lin2(h)
         return y
 
     def reset_state(self):

@@ -1,5 +1,4 @@
 script/2Dcat
 script/inreplyto/*
 __pycache__
-data/*
 *.pyc
