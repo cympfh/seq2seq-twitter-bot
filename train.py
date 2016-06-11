@@ -19,7 +19,7 @@ else:
 
 print("start learning")
 for cx in range(args.iteration):
-    loss = lang.train(cx=0)
+    loss = lang.train(cx=cx)
     print("#{} loss={}".format(cx, loss))
     if cx % 10 == 9:
         print("saving this model as {}".format(args.o))
