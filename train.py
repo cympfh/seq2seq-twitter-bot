@@ -1,3 +1,4 @@
+import time
 import pickle
 import model
 import argparse
@@ -26,3 +27,4 @@ for cx in range(args.iteration):
         with open(args.o, mode='wb') as f:
             pickle.dump(lang, f)
             print("done")
+    time.sleep(20)
