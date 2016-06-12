@@ -116,11 +116,9 @@ class Lang(Chain):
             loss += F.softmax_cross_entropy(self.model(x, train=True), y)
         return loss
 
-    def train(self, batch=100, cx=0):
+    def train(self, batch=100):
         n = len(self.train_data)
-        order = np.random.permutation(n)
-
-        indicies = [order[i % n] for i in range(cx * batch, (cx + 1) * batch)]
+        indicies = [i % n for i in np.random.permutation(n)[0:batch]]
         us = [self.train_data[i]["input"] for i in indicies]
         vs = [self.train_data[i]["output"] for i in indicies]
         loss = self.error(us, vs)
