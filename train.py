@@ -18,11 +18,6 @@ if args.resume:
 else:
     lang = model.Lang(args.i)
 
-
-print("train data loading")
-lang.train_data = []
-lang.load(args.i, addition=False)
-
 print("start learning")
 for cx in range(args.iteration):
     loss = lang.train()
