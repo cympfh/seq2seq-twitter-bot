@@ -1,4 +1,7 @@
 script/2Dcat
 script/inreplyto/*
+data/yuyushiki.*
+data/all*
+data/2D*
 __pycache__
 *.pyc

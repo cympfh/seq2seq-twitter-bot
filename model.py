@@ -67,7 +67,7 @@ class Lang(Chain):
             return [self.alphabet[a] if a in self.alphabet else unk
                     for a in list(s)]
 
-    def load(self, trainfile):
+    def load(self, trainfile, addition=True):
         for a in special_chars:
             self.add_alphabet(a)
         eos = self.alphabet["<eos>"]
@@ -78,8 +78,8 @@ class Lang(Chain):
                 lines.append(line.strip())
 
         for i in range(len(lines)//2):
-            a = self.sentence_to_vector(lines[i * 2], addition=True)
-            b = self.sentence_to_vector(lines[i * 2 + 1], addition=True)
+            a = self.sentence_to_vector(lines[i * 2], addition=addition)
+            b = self.sentence_to_vector(lines[i * 2 + 1], addition=addition)
             a = a + [eos]
             b = b + [eos]
             self.train_data.append({"input": a, "output": b})
