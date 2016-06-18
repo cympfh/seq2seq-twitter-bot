@@ -20,11 +20,13 @@ else:
 
 print("start learning")
 for cx in range(args.iteration):
-    loss = lang.train()
-    print("#{} loss={}".format(cx, loss))
+    start = time.time()
+    loss = lang.train(batch=100)
+    elapsed_time = time.time() - start
+    print("#{} loss={} ({} sec)".format(cx, loss, elapsed_time))
     if cx % 10 == 9:
         print("saving this model as {}".format(args.o))
         with open(args.o, mode='wb') as f:
             pickle.dump(lang, f)
             print("done")
-    time.sleep(20)
+    time.sleep(10)
