@@ -4,10 +4,10 @@ usage:
 	@echo test -- test the Language-Model
 
 eliza:
-	python ./eliza.py
+	python3 ./eliza.py
 
 test:
-	python ./gen_test.py eliza.model
+	python3 ./gen_test.py eliza.model
 
 train:
-	python ./train.py -i data/all.txt -o eliza.model --iteration 10000000 --resume
+	python3 ./train.py -i data/all.txt -o eliza.model --iteration 10000000 --resume
